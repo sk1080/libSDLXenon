@@ -178,7 +178,7 @@ void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
                         SDL_PrivateJoystickButton(joystick, (Uint8)8, SDL_RELEASED);
         }
 
-        if (joystick->hwdata->curpad.select)
+        if (joystick->hwdata->curpad.back)
         {
                 if (!joystick->buttons[9])
                         SDL_PrivateJoystickButton(joystick, (Uint8)9, SDL_PRESSED);
