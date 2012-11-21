@@ -22,6 +22,7 @@
 
 #include <ppc/timebase.h>
 #include <time/time.h>
+#include <threads/threads.h>
  
 #include "SDL_timer.h"
 #include "../SDL_timer_c.h"
@@ -42,7 +43,7 @@ Uint32 SDL_GetTicks(void)
 
 void SDL_Delay(Uint32 ms)
 {
-	mdelay(ms);                
+	thread_sleep(ms);
 }
 
 int SDL_SYS_TimerInit(void)

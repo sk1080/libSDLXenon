@@ -43,10 +43,15 @@ void RunThread(void *data)
 
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
-{			 
-	printf("Creating SDL Thread: args at %x\n", args);
+{
+	static int core = 1;
 
-	PTHREAD thr = thread_create(RunThread, 0, args, 0);
+	PTHREAD thr = thread_create(RunThread, 0, args, THREAD_FLAG_CREATE_SUSPENDED);
+	thread_set_processor(thr, core);
+	core++;
+	if(core > 5)
+		core = 1;
+	thread_resume(thr);
 
 	thread->handle = thr;
 
