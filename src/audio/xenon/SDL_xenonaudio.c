@@ -21,6 +21,7 @@
 */
 
 #include <stdio.h>
+#include <threads/threads.h>
 
 #include "SDL_types.h"
 #include "SDL_error.h"
@@ -47,7 +48,9 @@ static unsigned char thread_stack[0x10000];
 static volatile void * thread_buffer=NULL;
 static volatile int thread_bufsize=0;
 static int thread_bufmaxsize=0;
-static volatile int thread_terminate=0;
+static volatile int thread_term=0;
+
+PTHREAD aud;
  
 /* Audio driver functions */
 static int XENON_OpenAudio(_THIS, SDL_AudioSpec *spec);
@@ -189,8 +192,8 @@ static void XENON_WaitDone(_THIS)
 
 static void XENON_CloseAudio(_THIS)
 {
-        thread_terminate=1;
-        while(xenon_is_thread_task_running(2));
+        thread_term=1;
+        while(aud->ThreadTerminated != 0);
 	
 }
 
@@ -237,7 +240,7 @@ static void thread_loop()
         int local_bufsize=0;
         int k;
 
-        while(!thread_terminate){
+        while(!thread_term){
             
                 short *stream = (short *)dma_buffer;
                                      
@@ -296,13 +299,17 @@ static int XENON_OpenAudio(_THIS, SDL_AudioSpec *spec)
         thread_buffer=NULL;
         thread_bufsize=0;
         thread_bufmaxsize=0;
-        thread_terminate=0;
+        thread_term=0;
 
         // Semaphores/Mutexes dont exist yet in libXenon so we dont want libSDL to handle
         // the threading. Instead create our own thread here to handle the audio.
  
-        xenon_run_thread_task(2,&thread_stack[sizeof(thread_stack)-0x100],thread_loop); 
-                
+        //xenon_run_thread_task(2,&thread_stack[sizeof(thread_stack)-0x100],thread_loop);
+        aud = thread_create(thread_loop, 0, 0, THREAD_FLAG_CREATE_SUSPENDED);
+        thread_set_processor(aud, 2);
+        thread_set_name(aud, "sdl_aud");
+        thread_resume(aud);
+
         // 1 means that libSDL wont call SDL_CreateThread();
         
 	return(1);              

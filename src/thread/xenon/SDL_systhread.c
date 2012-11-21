@@ -28,28 +28,15 @@
 #include <xetypes.h>
 #include <ppc/register.h>
 #include <ppc/xenonsprs.h>
+#include <threads/threads.h>
 
 #include "SDL_thread.h"
 #include "SDL_systhread_c.h"
 #include "../SDL_thread_c.h"
 #include "../SDL_systhread.h"
 
-typedef struct thread_s{
-    unsigned int lock  __attribute__ ((aligned (128)));
-    unsigned int states;
-    void *args;
-    int (*func)(void);
-}thread_t;
-
-static thread_t thread_states[5];
-static unsigned char stack[5 * 0x1000];
-
-static volatile int hardwareThread = 1;
-
 void RunThread(void *data)
 {	
-        int currThread = mfspr(pir);        
-        data = thread_states[currThread].args; 
 	SDL_RunThread(data);
 	return;
 }
@@ -57,16 +44,11 @@ void RunThread(void *data)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {			 
-	thread->handle = hardwareThread;
-	thread->threadid = hardwareThread;
+	printf("Creating SDL Thread: args at %x\n", args);
 
-        thread_states[hardwareThread].args = args;
-	xenon_run_thread_task(hardwareThread,stack + (hardwareThread * 0x1000) - 0x100, RunThread);
- 
-	hardwareThread++;
+	PTHREAD thr = thread_create(RunThread, 0, args, 0);
 
-	if (hardwareThread >=6)
-		hardwareThread = 1;
+	thread->handle = thr;
 
 	return 0;
 }
@@ -78,38 +60,19 @@ void SDL_SYS_SetupThread(void)
 
 Uint32 SDL_ThreadID(void)
 {
-	return mfspr(pir);
+	return thread_get_current()->ThreadId;
 }
 
 void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
-
-	int wait = 1;
-    	
-	while(wait){
-		lock(&thread_states[thread->threadid].lock);
-		if(thread_states[thread->threadid].states==0){
-			wait = 0;
-		}
-	        unlock(&thread_states[thread->threadid].lock);
-	}
-   
+	PTHREAD pthr = (PTHREAD)thread->handle;
+	while(pthr->ThreadTerminated != 0);
 	return;
 }
 
 void SDL_SYS_KillThread(SDL_Thread *thread)
 {
-
-	// put thread to sleep
-	xenon_sleep_thread(thread->threadid);
-
-	// release states on thread
-	lock(&thread_states[thread->threadid].lock);
-	thread_states[thread->threadid].states = 0;
-	thread_states[thread->threadid].func = NULL;
-	unlock(&thread_states[thread->threadid].lock);
-
- 
+	printf("KillThread: Not Yet Implemented\n");
 }
 
 

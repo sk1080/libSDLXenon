@@ -36,7 +36,7 @@
 #include <xenon_smc/xenon_smc.h>
 #include <xenon_soc/xenon_power.h>
 
-typedef unsigned int size_t;
+//typedef unsigned int size_t;
 
 #define HAVE_MMAP 0
 
