@@ -44,7 +44,7 @@ void RunThread(void *data)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-	static int core = 1;
+	static int core = 2;
 
 	PTHREAD thr = thread_create(RunThread, 0, args, THREAD_FLAG_CREATE_SUSPENDED);
 	thread_set_processor(thr, core);
@@ -71,7 +71,7 @@ Uint32 SDL_ThreadID(void)
 void SDL_SYS_WaitThread(SDL_Thread *thread)
 {
 	PTHREAD pthr = (PTHREAD)thread->handle;
-	while(pthr->ThreadTerminated != 0);
+	while(pthr->ThreadTerminated == 0);
 	return;
 }
 
