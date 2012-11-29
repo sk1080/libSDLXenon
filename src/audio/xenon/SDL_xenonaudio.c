@@ -306,7 +306,7 @@ static int XENON_OpenAudio(_THIS, SDL_AudioSpec *spec)
  
         //xenon_run_thread_task(2,&thread_stack[sizeof(thread_stack)-0x100],thread_loop);
         aud = thread_create(thread_loop, 0, 0, THREAD_FLAG_CREATE_SUSPENDED);
-        thread_set_processor(aud, 1);
+        thread_set_processor(aud, 2);
         thread_set_name(aud, "sdl_aud");
         thread_resume(aud);
 
