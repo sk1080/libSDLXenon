@@ -243,7 +243,9 @@ static void thread_loop()
         while(!thread_term){
             
                 short *stream = (short *)dma_buffer;
-                                     
+
+                while(current_audio->paused);
+
                 // grab the audio
                 current_audio->spec.callback(
                 current_audio->spec.userdata,
