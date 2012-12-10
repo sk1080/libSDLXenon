@@ -50,7 +50,7 @@ int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 	thread_set_processor(thr, core);
 	core+=1;
 	if(core > 5)
-		core = 0;
+		core = 1;
 	thread_resume(thr);
 
 	thread->handle = thr;

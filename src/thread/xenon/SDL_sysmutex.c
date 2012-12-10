@@ -32,8 +32,12 @@
 #include <ppc/register.h>
 #include <ppc/xenonsprs.h>
 
+#include <threads/threads.h>
+#include <threads/mutex.h>
+
 struct SDL_mutex {
-        unsigned int mutex  __attribute__ ((aligned (128)));
+	MUTEX *lock;
+	MUTEX *mutex;
 	int recursive;
 	Uint32 owner;
 };
@@ -45,10 +49,11 @@ SDL_mutex *SDL_CreateMutex(void)
 
 	/* Allocate mutex memory */
 	mutex = (SDL_mutex *)SDL_malloc(sizeof(*mutex));
+	mutex->lock = mutex_create(1);
+	mutex->mutex = mutex_create(1);
 	if ( mutex ) {
-		mutex->mutex = 0;
 		mutex->recursive = 0;
-		mutex->owner = 0;
+		mutex->owner = -1;
 	} else {
 		SDL_OutOfMemory();
 	}
@@ -59,6 +64,8 @@ SDL_mutex *SDL_CreateMutex(void)
 void SDL_DestroyMutex(SDL_mutex *mutex)
 {
 	if ( mutex ) {
+		mutex_destroy(mutex->lock);
+		mutex_destroy(mutex->mutex);
 		SDL_free(mutex);
 	}
 }
@@ -76,6 +83,8 @@ int SDL_mutexP(SDL_mutex *mutex)
 		return -1;
 	}
 
+	//mutex_acquire(mutex->lock, -1);
+
 	this_thread = SDL_ThreadID();
 	if ( mutex->owner == this_thread ) {
 		++mutex->recursive;
@@ -84,10 +93,12 @@ int SDL_mutexP(SDL_mutex *mutex)
 		   We set the locking thread id after we obtain the lock
 		   so unlocks from other threads will fail.
 		*/
-		lock(&mutex->mutex);
+		mutex_acquire(mutex->mutex, -1);
 		mutex->owner = this_thread;
 		mutex->recursive = 0;
 	}
+
+	//mutex_release(mutex->lock);
 
 	return 0;
 #endif /* SDL_THREADS_DISABLED */
@@ -104,9 +115,12 @@ int SDL_mutexV(SDL_mutex *mutex)
 		return -1;
 	}
 
+	//mutex_acquire(mutex->lock, -1);
+
 	/* If we don't own the mutex, we can't unlock it */
 	if ( SDL_ThreadID() != mutex->owner ) {
 		SDL_SetError("mutex not owned by this thread");
+		//mutex_release(mutex->lock);
 		return -1;
 	}
 
@@ -118,9 +132,12 @@ int SDL_mutexV(SDL_mutex *mutex)
 		   the mutex and set the ownership before we reset it,
 		   then release the lock semaphore.
 		 */
-		mutex->owner = 0;
-		unlock(&mutex->mutex);
+		mutex->owner = -1;
+		mutex_release(mutex->mutex);
 	}
+
+	//mutex_release(mutex->lock);
+
 	return 0;
 #endif /* SDL_THREADS_DISABLED */
 }
